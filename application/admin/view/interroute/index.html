@@ -1,0 +1,181 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-fluid" id="app">
+<div class="layui-form layui-card-header layuiadmin-card-header-auto">
+  <div class="layui-form-item">
+    <label class="layui-form-label">组名</label>
+    <div class="layui-inline">
+      <input type="text" v-model="searchText" class="layui-input">
+    </div>
+    <div class="layui-inline">
+  <button class="layui-btn" @click="search()">
+  <i class="layui-icon layui-icon-search"></i>
+</button>
+</div>
+  </div>
+</div>
+
+  <div class="layui-btn-container">
+	<button class="layui-btn" @click="add()"><i class="layui-icon layui-icon-add-1"></i>添加</button>
+  
+  <div class="layui-form">
+	<table class="layui-table">
+  <colgroup>
+    <col width="150">
+    <col width="200">
+    <col>
+  </colgroup>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>用户名</th>
+      <th>创建时间</th>
+      <th>操作</th>
+    </tr> 
+  </thead>
+  <tbody>
+
+    <tr v-for="item in msgData">
+      <td>{{item.id}}</td>
+      <td>{{item.username}}</td>
+      <td>{{item.create_time | data}}</td>
+      <td>
+        <div class="layui-table-cell laytable-cell-7-8">
+          <button @click="edit(item.id)" class="layui-btn layui-btn-xs layui-btn-normal"><i class="layui-icon layui-icon-edit"></i>编辑</button>
+           <button @click="editpwd(item.id)" class="layui-btn layui-btn-xs layui-btn-warm"><i class="layui-icon layui-icon-edit"></i>修改密码</button>
+          <a href="javascript:;" @click="dataDel(item.id)" class="layui-btn layui-btn-xs layui-btn-danger"><i class="layui-icon">&#xe640;</i>删除</a>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<el-collapse v-model="activeNames" @change="handleChange">
+  <el-collapse-item title="一致性 Consistency" name="1">
+    <div>与现实生活一致：与现实生活的流程、逻辑保持一致，遵循用户习惯的语言和概念；</div>
+    <div>在界面中一致：所有的元素和结构需保持一致，比如：设计样式、图标和文本、元素的位置等。</div>
+  </el-collapse-item>
+  <el-collapse-item title="反馈 Feedback" name="2">
+    <div>控制反馈：通过界面样式和交互动效让用户可以清晰的感知自己的操作；</div>
+    <div>页面反馈：操作后，通过页面元素的变化清晰地展现当前状态。</div>
+  </el-collapse-item>
+  <el-collapse-item title="效率 Efficiency" name="3">
+    <div>简化流程：设计简洁直观的操作流程；</div>
+    <div>清晰明确：语言表达清晰且表意明确，让用户快速理解进而作出决策；</div>
+    <div>帮助用户识别：界面简单直白，让用户快速识别而非回忆，减少用户记忆负担。</div>
+  </el-collapse-item>
+  <el-collapse-item title="可控 Controllability" name="4">
+    <div>用户决策：根据场景可给予用户操作建议或安全提示，但不能代替用户进行决策；</div>
+    <div>结果可控：用户可以自由的进行操作，包括撤销、回退和终止当前操作等。</div>
+  </el-collapse-item>
+</el-collapse>
+
+</div>
+</div>
+<pageination :total="model.total" :size="model.size" :page="model.page" :changge="pageFn"></pageination>
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+  new Vue({ 
+    el:"#app",
+    data:{
+      msgData:'',
+      searchText:'',
+      activeNames: ['1'],
+      model:{
+        total:0,//总页数
+        size:10,//每页显示条目个数不传默认10
+        page:1,//当前页码
+      }
+    },
+    methods:{
+      //页码切换执行方法
+      pageFn(val){
+        this.model.page=val;
+        this.list();
+      },
+       handleChange(val) {
+        console.log(val);
+      },
+      list:function(){
+        this.$http.post('/api.php/admin/lst',{
+            page:this.model.page,
+            rows:this.model.size,
+            seacchText:this.searchText
+          },{
+             emulateJSON: true
+          }).then(function(res){
+            var obj = JSON.parse(res.data)
+            if(obj.code==200){
+              this.msgData = obj.data.info;
+              this.model.total = obj.data.count;
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg);
+              }); 
+            }
+          });
+        },
+        search:function(){
+          this.page = 1;
+          return this.list();
+        },
+        add:function(){
+          layer.open({
+            type: 2,
+            area: ['700px', '450px'],
+            fixed: false, //不固定
+            maxmin: true,
+            title:"添加用户信息",
+            content: "/api.php/index/view?c=admin&a=add"
+          });
+        },
+        edit:function(id){
+          layer.open({
+            type:2,
+            area:['700px','450px'], 
+            fixed:false,
+            maxmin:true,
+            title:'编辑用户信息',
+            content:'/api.php/index/view/?c=admin&a=edit&id='+id
+          });
+        },
+        dataDel:function(id){
+          alert(id)
+         layer.confirm('你确定要删除吗？', {icon: 3}, function (index) {
+            Vue.http.post('/api.php/admin/del',{id:id},{emulateJSON: true}).then(function(res){
+              var obj = JSON.parse(res.data)
+            if(obj.code==204){
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:1,time:1500,shade:0.1},function(index){
+                    window.location.reload();
+                  });
+                }); 
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:0,time:1500,shade:0.1});
+              }); 
+            }
+          });
+
+        });
+        },
+        editpwd:function(id){
+          layer.open({
+            type:2,
+            area:['700px','450px'], 
+            fixed:false,
+            maxmin:true,
+            title:'编辑用户信息',
+            content:'/api.php/index/view?c=admin&a=pwd&id='+id
+          });
+        }
+      }
+    });
+</script>
+
+</html>

@@ -1,0 +1,112 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-fluid" id="app">
+    <div class="layui-btn-container">
+  	 <button class="layui-btn" @click="add()"><i class="layui-icon layui-icon-add-1"></i>添加</button>
+      <div class="layui-form">
+  	    <table class="layui-table">
+          <colgroup>
+            <col width="150">
+            <col width="200">
+            <col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>组名</th>
+              <th>创建时间</th>
+              <th>操作</th>
+            </tr> 
+          </thead>
+          <tbody>
+            <tr v-for="item in msgData">
+              <td>{{item.id}}</td>
+              <td>{{item.name}}</td>
+              <td>{{item.create_time | data}}</td>
+              <td>
+                <div class="layui-table-cell laytable-cell-7-8">
+                  <button @click="edit(item.id)" class="layui-btn layui-btn-xs layui-btn-normal"><i class="layui-icon layui-icon-edit"></i>编辑</button>
+                  <a href="javascript:;" @click="dataDel(item.id)" class="layui-btn layui-btn-xs layui-btn-danger"><i class="layui-icon">&#xe640;</i>删除</a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+  new Vue({ 
+    el:"#app",
+    data:{
+      msgData:'',
+      searchText:'',
+    },
+    created: function(){
+      this.list();
+    },
+    methods:{
+      list:function(){
+        this.$http.post('/admin/group/lst',{
+            seacchText:this.searchText
+          },{
+             emulateJSON: true
+          }).then(function(res){
+            var obj = res.data
+            if(obj.code==200){
+              this.msgData = obj.data.info;
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg);
+              }); 
+            }
+          });
+        },
+        add:function(){
+          layer.open({
+            type: 2,
+            area: ['700px', '450px'],
+            fixed: false, //不固定
+            maxmin: true,
+            title:"添加用户信息",
+            content: "/admin/index/view?c=group&a=add"
+          });
+        },
+        edit:function(id){
+          layer.open({
+            type:2,
+            area:['700px','450px'], 
+            fixed:false,
+            maxmin:true,
+            title:'编辑分组信息',
+            content:'/admin/index/view/?c=group&a=edit&id='+id
+          });
+        },
+        dataDel:function(id){
+         layer.confirm('你确定要删除吗？', {icon: 3}, function (index) {
+            Vue.http.post('/admin/group/del',{id:id},{emulateJSON: true}).then(function(res){
+              var obj = res.data
+            if(obj.code==204){
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:1,time:1500,shade:0.1},function(index){
+                    window.location.reload();
+                  });
+                }); 
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:0,time:1500,shade:0.1});
+              }); 
+            }
+          });
+        });
+        },
+      }
+    });
+</script>
+
+</html>

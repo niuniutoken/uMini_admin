@@ -1,0 +1,104 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-fluid" id="app">
+<div class="layui-form layui-card-header layuiadmin-card-header-auto">
+  <div class="layui-form-item">
+    <button class="layui-btn" @click="addtop()"><i class="layui-icon layui-icon-add-1" ></i>添加顶级节点</button>
+    <button class="layui-btn" @click="refresh()"><i class="layui-icon  layui-icon-refresh"></i>刷新树</button>
+    <input type="hidden" v-model="id">
+  </div>
+</div>
+
+  <div class="layui-btn-container">
+      <ul id="menu"></ul>
+  </div>
+  
+</div>
+
+</body>
+{include file="public/footer" /}
+
+<script>
+  new Vue({ 
+    el:"#app",
+    data:{
+      id:'',
+    },
+    created: function(){
+      this.list();
+    },
+    methods:{
+      list:function(){
+        this.$http.get('/admin/menu/lst').then(function(res){
+            var obj = res.data;
+            if(obj.code==200){
+              var nodes = obj.data
+              layui.use(['tree', 'layer'], function(){
+                var layer = layui.layer,
+                $ = layui.jquery; 
+                layui.tree({
+                  elem:'#menu',//指定元素
+                  click: function(item){ //点击节点回调
+                    this.id = item.id;
+                    layer.open({
+                        type: 2,
+                        title: '您要如何操作该节点',
+                        anim: 2,
+                        skin: 'layui-layer-molv', //加上边框
+                        area: ['400px', '150px'], //宽高
+                        content:'/admin/index/view?c=menu&a=ask&id='+this.id,
+                    });
+                  },
+                  nodes:nodes
+                });
+              });
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg);
+              }); 
+            }
+          });
+        },
+        search:function(){
+          this.page = 1;
+          return this.list();
+        },
+        dataDel:function(id){
+            this.$http.post('/admin/menu/del',{id:id},{emulateJSON: true}).then(function(res){
+              var obj = res.data
+            if(obj.code==204){
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:1,time:1500,shade:0.1},function(index){
+                    window.location.reload();
+                  });
+                }); 
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:0,time:1500,shade:0.1},function(index){
+                  window.location.reload();
+                });
+              }); 
+            }
+            });
+        },
+        addtop:function(){
+          layer.open({
+            type:2,
+            area:['700px','450px'],
+            fixed:false,
+            maxmin:true,
+            title:'添加顶级节点',
+            content:'/admin/index/view?c=menu&a=addTop',
+          });
+        },
+        refresh:function(){
+          window.location.reload();
+        }
+
+      }
+    });
+</script>
+</html>

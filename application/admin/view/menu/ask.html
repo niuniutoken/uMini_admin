@@ -1,0 +1,85 @@
+{include file="public/header" /}
+<body>
+  <div id="app">
+      <div class="form-group" style="text-align: center;margin:25px;">
+        <button class="layui-btn" @click="add(id)"><i class="layui-icon layui-icon-add-1" ></i>添加</button>
+
+        <button class="layui-btn layui-btn-normal" @click="edit(id)"><i class="layui-icon layui-icon-edit"></i>编辑</button>
+
+        <button class="layui-btn layui-btn-danger" @click="delData(id)"><i class="layui-icon layui-icon-close"></i>删除</button>
+
+       
+      </div>
+</div>
+
+</body>
+{include file="public/footer" /}
+<script>
+new Vue({
+  el:"#app",
+  data:{
+    id:''
+  },
+  mounted:function(){
+    this.getUrlParam('id');
+  },
+  methods:{
+    add:function(id){
+       parent.layer.open({
+          type: 2,
+          area: ['700px', '450px'],
+          fixed: false, //不固定
+          maxmin: true,
+          title:"添加菜单",
+          closeBtn: 0,
+          content: "/admin/index/view?c=menu&a=add&id="+id
+        });
+    },
+    edit:function(id){
+        parent.layer.open({
+            type:2,
+            area:['700px','450px'], 
+            fixed:false,
+            maxmin:true,
+            closeBtn: 0,
+            title:'编辑用户信息',
+            content:'/admin/index/view?c=menu&a=edit&id='+id
+          });
+        },
+    getUrlParam:function(name){
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if(r !=null){
+            this.id = unescape(r[2]);
+        }else{
+          return null;
+        }
+        console.log(this.id)
+    },
+    delData:function(id){
+      this.$http.post('/admin/menu/del',{id:id},{emulateJSON:true}).then(function(res){
+        var obj = res.data;
+        if(obj.code==204){
+          layui.use('layer', function(){
+            var layer = layui.layer;
+            layer.msg(obj.msg,{icon:1,time:1500,shade:0.1},function(index){
+              var index=parent.layer.getFrameIndex(window.name);//获取当前弹出层的层级
+              window.parent.location.reload();//刷新父页面
+              parent.layer.close(index);//关闭弹出层
+            });
+          }); 
+        }else{
+          layui.use('layer', function(){
+            var layer = layui.layer;
+            layer.msg(obj.msg,{icon:0,time:1500,shade:0.1},function(index){
+               var index=parent.layer.getFrameIndex(window.name);//获取当前弹出层的层级
+              parent.layer.close(index);//关闭弹出层
+            });
+          }); 
+        }
+      });
+    }
+  }
+});
+</script>
+</html>

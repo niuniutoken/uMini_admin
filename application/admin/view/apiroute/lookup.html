@@ -1,0 +1,112 @@
+{include file="public/header" /}
+<style>
+  .el-menu-vertical-demo:not(.el-menu--collapse) {
+    width: 200px;
+    min-height: 400px;
+  }
+#web{
+    height: 80%;
+    width: 100%;
+    padding-left:20px;
+    overflow: auto;
+  }
+.action_name{
+  width:200px;
+  display: inline-block;
+  padding-left:20px;
+}
+.action_name_comment{
+  width:400px;
+  display: inline-block
+}
+.action_name_comment_button{
+  display:inline-block;
+  float:right
+}
+.action-name-spacing{
+  margin-top:10px;
+}
+</style>
+<body style="overflow:hidden">
+  <div id="app" class="form-bottom" v-cloak>
+    <el-container style="height:100%">
+      <el-aside style="width:200px;height: 100%;overflow: auto;padding-bottom: 86px;">
+        <el-menu class="el-menu-vertical-demo" :collapse="isCollapse">
+          <div v-for="item in msgData">
+            <el-submenu :index="item.id">
+              <template slot="title">
+                <span slot="title" style="font-weight:bold">
+                <i class="el-icon-news"></i>{{item.group_name}}</span>
+              </template>
+              <el-menu-item-group >
+                <div v-for=" child in item.group_child">
+                  <el-menu-item index='child.id' @click="detail(child.id)">{{child.route_action}}</el-menu-item>
+                </div>
+              </el-menu-item-group>
+            </el-submenu>
+          </div>
+        </el-menu>
+      </el-aside>
+      <el-container>
+        <div id="web">
+            <el-collapse v-model="activeNames">
+              <div v-for="item in msgData">
+                <el-collapse-item :title="item.group_name" :name="item.id">
+                  <div v-for=" child in item.group_child">
+                    <el-row style="margin-bottom:10px">
+                     <!--  <el-button @click="detail(child.id)" type="success" size="mini">{{child.route_method}}</el-button> --> 
+                      <div class="action_name">{{child.route_action}}</div>
+                      <div class="action_name_comment">{{child.route_name}}</div>
+                    </el-row>
+                  </div>
+                </el-collapse-item>
+              </div>
+            </el-collapse>
+          </div>
+        </div>
+       </el-container>
+    </el-container>
+  </div>
+</body>
+{include file="public/footer" /}
+<script>
+new Vue({
+  el:"#app",
+  data:{
+    msgData:"",
+    isCollapse: false,
+    activeNames: [],
+  },
+  created:function(){
+    this.list();
+  },
+  methods:{
+    detail(id){
+      web.innerHTML="<iframe src='/admin/index/view/?c=apiroute&a=look_details&id="+id+"' frameborder='no' style='width:100%;height:100%'></iframe>";
+    },
+    list:function(){
+      var _this = this;
+      _this.$http.post('/admin/api_route/lst',{
+       
+        },{
+           emulateJSON: true
+        }).then(function(res){
+          var obj = res.data
+          if(obj.code==200){
+            _this.msgData = obj.data.list;
+            _this.activeNames = obj.data.ids;
+          }else{
+            layui.use('layer', function(){
+              var layer = layui.layer;
+              layer.msg(obj.msg);
+            }); 
+          }
+      });
+    },
+    VueString(val){
+     return String(val)
+    }
+  }
+});
+</script>
+</html>

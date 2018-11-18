@@ -1,0 +1,136 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-form-center" id="app">
+    <el-form label-width="80px" style="margin-bottom: 140px;">
+      <el-form-item label="标题">
+        <el-input v-model="title"></el-input>
+      </el-form-item>
+      <el-form-item label="封面">
+        <el-upload
+          class="avatar-uploader"
+          action="/admin/upload/upload"
+          :show-file-list="false"
+          :on-success="handleAvatarSuccess"
+          :before-upload="beforeAvatarUpload">
+          <img v-if="cover" :src="cover" class="avatar">
+          <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+        </el-upload>
+      </el-form-item>
+       <el-form-item label="关键词">
+        <el-input v-model="keyword"></el-input>
+      </el-form-item>
+      <el-form-item label="文章描述">
+        <el-input type="textarea" v-model="desc"></el-input>
+      </el-form-item>
+      <el-form-item label="是否发布">
+        <el-switch v-model="status"></el-switch>
+      </el-form-item>
+      <el-form-item label="作者">
+        <el-input v-model="author"></el-input>
+      </el-form-item>
+      <el-form-item label="来源">
+        <el-input v-model="from"></el-input>
+      </el-form-item>
+       <el-form-item label="内容">
+         <!-- <div id="editor" style="height:500px"></div> --><!--默认编辑-->
+        <div id="div1" class="toolbar"></div>
+        <div id="div2" class="text" style="height:500px">
+          <!--可使用 min-height 实现编辑区域自动增加高度-->
+        </div>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="onSubmit">确定</el-button>
+        <el-button>取消</el-button>
+      </el-form-item>
+    </el-form>
+  </div>
+</body>
+{include file="public/footer" /}
+<script type="text/javascript" src="/public/static/wangeditor3/wangEditor.min.js"></script>
+<script type="text/javascript">
+    
+</script>
+<script>
+new Vue({
+  el:"#app",
+  data:{
+    title:'',
+    cover: '',
+    keyword: '',
+    content: '',
+    desc: '',
+    status: true,
+    from: '',
+    author: '',
+    imageUrl: ''
+  },
+  mounted :function(){
+    var E = window.wangEditor
+    var editor = new E('#div1', '#div2');
+    
+    // 或者 var editor = new E( document.getElementById('editor') )
+    //editor.customConfig.uploadImgServer = '/public/uploads/wangEditor';
+    editor.customConfig.uploadImgHeaders = {
+      'Accept' : 'multipart/form-data'
+    };
+    editor.customConfig.uploadFileName = 'file';
+    editor.customConfig.uploadImgServer = '/admin/upload/upload';
+    //用户操作（鼠标点击、键盘打字等）导致的内容变化之后，会自动触发此函数并获取富文本中的所有内容
+    editor.customConfig.onchange = (html) => {
+      this.content = html
+    } 
+    editor.customConfig.zIndex = 1;    //防止富文本编辑器被别的内容所覆盖     
+    editor.create()
+  },
+  methods:{
+    onSubmit:function(){
+      if(this.status){
+        this.status = 1;
+      }else{
+        this.status = 2;
+      }
+      this.$http.post('/admin/article/add',{
+        title:this.title,
+        cover:this.cover,
+        keyword:this.keyword,
+        content:this.content,
+        desc:this.desc,
+        status:this.status,
+        from:this.from,
+        author:this.author,
+      },{
+        emulateJSON: true
+      }).then(function(res){
+        var obj = res.data;
+        if(obj.code==201){
+           window.location.href="/admin/index/view?c=article&a=index";
+        }else{
+          layui.use('layer', function(){
+            var layer = layui.layer;
+            layer.msg(obj.msg,{icon:0,time:1000,shade:0.1},function(index){
+                 var index=parent.layer.getFrameIndex(window.name);
+                 parent.layer.close(index);
+            });
+          }); 
+        }
+      })
+    },
+    handleAvatarSuccess(res, file) {
+       this.cover = res.data[0];
+    },
+    beforeAvatarUpload(file) {
+      const isJPG = file.type === 'image/jpeg';
+      const isLt2M = file.size / 1024 / 1024 < 2;
+
+      // if (!isJPG) {
+      //   this.$message.error('上传头像图片只能是 JPG 格式!');
+      // }
+      // if (!isLt2M) {
+      //   this.$message.error('上传头像图片大小不能超过 2MB!');
+      // }
+      // return isJPG && isLt2M;
+    }
+  }
+});
+</script>
+</html>

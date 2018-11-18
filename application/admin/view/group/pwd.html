@@ -1,0 +1,112 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-form-center" id="app">
+	<div class="layui-form" v-if="isshow">
+    <div class="layui-form-item layui-row layui-col-xs12">
+        <input type="hidden" v-model="id">
+        <label class="layui-form-label">用户名</label>
+        <div class="layui-input-inline">
+            <input type="text" v-model="username" class="layui-input userName" disabled="disabled">
+        </div>
+    </div>
+
+    <div class="layui-form-item layui-row layui-col-xs12">
+        <label class="layui-form-label">新密码</label>
+        <div class="layui-input-inline">
+            <input type="password" v-model="password" class="layui-input userPassword" lay-verify="required" placeholder="请输入密码">
+        </div>
+        <div class="layui-form-mid layui-word-aux"><i class="layui-required">*</i></div>
+    </div>
+
+    <div class="layui-form-item layui-row layui-col-xs12">
+      <div class="layui-input-block">
+        <button type="button" @click="edit()" class="layui-btn" lay-submit lay-filter="form">立即提交</button>
+        <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+new Vue({
+  el:"#app",
+  data:{
+    id:'',
+    username:'',
+    password:'',
+    uid:'',
+    isshow:false
+  },
+  mounted:function(){
+    this.getUrlParam('id');
+    this.get();
+  },
+  methods:{
+    get:function(){
+      this.$http.get('/api.php/admin/info?id='+this.uid
+      ).then(function(res){
+        var obj = JSON.parse(res.data)
+        console.log(obj.code)
+        if(obj.code==200){
+          this.isshow = true;
+          this.id = obj.data.id;
+          this.username = obj.data.username;
+        }else if(obj.code==404){
+          layui.use('layer',function(){
+            var layer = layui.layer;
+            layer.msg(obj.msg);
+          });
+        }else{
+          layui.use('layer', function(){
+            var layer = layui.layer;
+            layer.msg('服务器内部错误');
+          }); 
+        }
+      });
+    },
+    edit:function(){
+      this.$http.post('/api.php/admin/editpwd',{
+        id:this.id,
+        password:this.password
+        },{
+        emulateJSON: true
+        }).then(function(res){
+          var obj = JSON.parse(res.data)
+          if(obj.code==201){
+            layui.use('layer', function(){
+              var layer = layui.layer;
+              layer.msg(obj.msg);
+              setTimeout(function () {
+                var index=parent.layer.getFrameIndex(window.name);
+                window.parent.location.reload();
+                parent.layer.close(index);
+              }, 1000);
+              
+            }); 
+          }else{
+            layui.use('layer', function(){
+              var layer = layui.layer;
+              layer.msg(obj.msg);
+              setTimeout(function () {
+                var index=parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+              },1000);
+            }); 
+          }
+      });
+    },
+    getUrlParam:function(name){
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if(r !=null){
+            this.uid = unescape(r[2]);
+        }else{
+          return null;
+        }
+      }
+  }
+});
+</script>
+
+</html>

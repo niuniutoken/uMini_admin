@@ -1,0 +1,155 @@
+{include file="public/header" /}
+
+<body>
+  <div id="app" class="form-bottom" v-cloak>
+
+  <el-form :label-position="labelPosition" label-width="100px" class="demo-form-inline" style="margin-left: 54px;" v-if="isshow">
+
+    <el-form :inline="true" class="demo-form-inline">
+      <el-form-item label="接口名称">
+       {{route_name}}
+      </el-form-item>
+    </el-form>
+
+     <el-form :inline="true" class="demo-form-inline">
+      <el-form-item label="路由名称">
+      {{route_action}}
+      </el-form-item>
+    </el-form>
+
+    <el-form>
+      <el-form-item label="接口分组">
+        {{group_name}}
+      </el-form-item>
+    </el-form>
+
+  <!--   <el-form :inline="true" class="demo-form-inline">
+      <el-form-item label="method">
+      {{route_method}}
+      </el-form-item>
+    </el-form> -->
+
+    <el-form :inline="true" class="demo-form-inline">
+      <el-form-item label="编写接口者">
+      {{username}}
+      </el-form-item>
+    </el-form>
+
+
+
+     <el-form :inline="true" class="demo-form-inline">
+      <el-form-item label="接口参数">
+         <template>
+          <el-table :data="dynamicValidateForm.params" style="width: 100%">
+            <el-table-column prop="param_name" label="参数名称" width="180"></el-table-column>
+            <el-table-column prop="param_type" label="参数类型" width="180"></el-table-column>
+            <el-table-column prop="is_required" label="是否必须">
+            </el-table-column>
+             <el-table-column prop="param_comment" label="参数解释">
+            </el-table-column>
+          </el-table>
+        </template>
+      </el-form-item>
+    </el-form>
+
+
+  <el-form :inline="true" class="demo-form-inline" disabled>
+    <el-form-item label="返回参数">
+    <el-input type="textarea" :rows="8" :cols="80" placeholder="请输入内容" v-model="return_param"></el-input>
+    </el-form-item>
+  </el-form>
+
+  <el-form :inline="true" class="demo-form-inline" disabled>
+    <el-form-item label="备注信息">
+      <el-input type="textarea" :rows="8" :cols="80" v-model="remark"></el-input>
+    </el-form-item>
+  </el-form>
+</el-form>
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+new Vue({
+  el:"#app",
+  data:{
+    isshow:false,
+    labelPosition: 'right',
+    route_name:'',
+    route_action:'',
+    group_id:'',
+    return_param:'',
+    remark:'',
+    group:'',
+    id:'',
+    group_name:'',
+    username:'',
+    dynamicValidateForm: {
+      params: [{
+        param_name: '',
+        param_type:'',
+        is_required:'',
+        param_comment:'',
+      }],
+    },
+  },
+  mounted:function(){
+    this.getUrlParam('id');
+    this.get();
+  },
+  methods:{
+      edit:function(){
+           window.location.href='/admin/index/view/?c=apiroute&a=edit&id='+this.id
+      },
+      dataDel:function(){
+        Vue.http.post('/admin/api_route/del',{id:this.id},{emulateJSON: true}).then(function(res){
+          var obj = res.data
+          if(obj.code==204){
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:1,time:1500,shade:0.1},function(index){
+                 window.location.href='/admin/index/view/?c=apiroute&a=index'
+                });
+              }); 
+          }else{
+            layui.use('layer', function(){
+              var layer = layui.layer;
+              layer.msg(obj.msg,{icon:0,time:1500,shade:0.1});
+            }); 
+          }
+        });
+      },
+      get:function(){
+        this.$http.get('/admin/api_route/info?id='+this.id
+        ).then(function(res){
+          var obj = res.data
+          if(obj.code==200){
+            this.isshow = true;
+            this.route_name = obj.data.route_name;
+            this.route_action = obj.data.route_action;
+            this.return_param = obj.data.return_param;
+            this.remark = obj.data.remark;
+            this.username = obj.data.username;
+            this.group_name = obj.data.group_name;
+            this.group_id = obj.data.group_id;
+            this.dynamicValidateForm.params = obj.data.params;
+          }else{
+            layui.use('layer',function(){
+              var layer = layui.layer;
+              layer.msg(obj.msg);
+            });
+          }
+        });
+      },
+      getUrlParam:function(name){
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if(r !=null){
+            this.id = unescape(r[2]);
+        }else{
+          return null;
+        }
+      }
+  }
+});
+</script>
+</html>

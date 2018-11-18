@@ -1,0 +1,149 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-form-center" id="app">
+	<div class="layui-form" v-if="isshow">
+
+    <div class="layui-form-item layui-row layui-col-xs12">
+        <label class="layui-form-label">菜单名称</label>
+        <div class="layui-input-inline">
+            <input type="text" v-model="name" class="layui-input" value="" placeholder="请输入菜单名">
+        </div>
+    </div>
+
+    <div class="layui-form-item layui-row layui-col-xs12" v-if="pid!=0">
+        <label class="layui-form-label">控制器名</label>
+        <div class="layui-input-inline">
+            <input type="text" v-model="controller" class="layui-input" value="" placeholder="请输入控制名">
+        </div>
+        <div class="layui-form-mid layui-word-aux"><i class="layui-required">*</i></div>
+    </div>
+
+    <div class="layui-form-item layui-row layui-col-xs12" v-if="pid!=0">
+        <label class="layui-form-label">方法名</label>
+        <div class="layui-input-inline">
+            <input type="text" v-model="action" class="layui-input" value="" placeholder="请输入方法名">
+        </div>
+    </div>
+
+    <div class="layui-form-item" id="openedDiv">
+      <label class="layui-form-label">是否显示</label>
+      <div class="layui-input-block">
+        <template>
+          <el-radio v-model="show" :label=1>显示</el-radio>
+          <el-radio v-model="show" :label=0>不显示</el-radio>
+        </template>
+      </div>
+    </div>
+
+    <div class="layui-form-item layui-row layui-col-xs12" v-if="pid==0">
+        <label class="layui-form-label">图标</label>
+        <div class="layui-input-inline">
+            <input type="text" v-model="icon" class="layui-input" value="" placeholder="例如：layui-icon-usernames">
+        </div>
+        <div class="layui-form-mid layui-word-aux">
+          <a href="https://www.layui.com/doc/element/icon.html" target="_blank" style="color:blue;">请点击参考链接</a>
+        </div>
+    </div>
+    
+
+    <div class="layui-form-item layui-row layui-col-xs12">
+      <div class="layui-input-block">
+        <button type="button" @click="edit(id)" class="layui-btn" lay-submit>立即提交</button>
+        <button type="reset" class="layui-btn layui-btn-normal">重置</button>
+        <button type="button" @click="close()" class="layui-btn layui-btn-danger" lay-submit lay-filter="form">关闭页面</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+{include file="public/footer"/}
+<script>
+new Vue({
+  el:"#app",
+  data:{
+    name:'',
+    show:1,
+    controller:'',
+    action:'',
+    id:'',
+    pid:'',
+    icon:'',
+    isshow:false,
+  },
+  mounted:function(){
+    this.getUrlParam('id');
+    this.get();
+  },
+  methods:{
+    get:function(){
+        this.$http.get('/admin/menu/info?id='+this.id).then(function(res){
+          var obj = res.data
+          if(obj.code==200){
+            this.isshow=true,
+            this.id = obj.data.id;
+            this.pid = obj.data.pid;
+            this.name = obj.data.name;
+            this.show = obj.data.show;
+            this.controller = obj.data.controller;
+            this.action = obj.data.action;
+            this.icon = obj.data.icon;
+          }else{
+            layui.use('layer',function(){
+              var layer = layui.layer;
+              layer.msg(obj.msg);
+            });
+          }
+        });
+    },
+    edit:function(){
+      this.$http.post('/admin/menu/edit?id='+this.id,{
+        name:this.name,
+        show:this.show,
+        controller:this.controller,
+        action:this.action,
+        icon:this.icon
+      },{
+        emulateJSON: true
+      }).then(function(res){
+        var obj = res.data;
+        if(obj.code==201){
+          layui.use('layer', function(){
+            var layer = layui.layer;
+            layer.msg(obj.msg,{icon:1,time:1500,shade:0.1},function(index){
+              var index=parent.layer.getFrameIndex(window.name);//获取当前弹出层的层级
+              window.parent.location.reload();//刷新父页面
+              parent.layer.close(index);//关闭弹出层
+            });
+          }); 
+        }else{
+          layui.use('layer', function(){
+            var layer = layui.layer;
+            layer.msg(obj.msg,{icon:0,time:1500,shade:0.1},function(index){
+              var index=parent.layer.getFrameIndex(window.name);//获取当前弹出层的层级
+              parent.layer.close(index);//关闭弹出层
+            });
+          }); 
+        }
+      })
+    },
+    getUrlParam:function(name){
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if(r !=null){
+            this.id = unescape(r[2]);
+        }else{
+          return null;
+        }
+        console.log(this.id)
+    },
+    close:function(){
+        parent.layer.close(index);//关闭弹出层
+        var index=parent.layer.getFrameIndex(window.name);//获取当前弹出层的层级
+        window.parent.location.reload();//刷新父页面
+    }
+
+  }
+});
+</script>
+</html>

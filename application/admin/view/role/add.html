@@ -1,0 +1,62 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-form-center" id="app">
+	<div class="layui-form">
+
+    <div class="layui-form-item layui-row layui-col-xs12">
+        <label class="layui-form-label">角色名</label>
+        <div class="layui-input-inline">
+            <input type="text" v-model="role_name" class="layui-input userName" value="" placeholder="请输入角色名">
+        </div>
+    </div>
+
+    <div class="layui-form-item layui-row layui-col-xs12">
+      <div class="layui-input-block">
+        <button type="button" class="layui-btn" @click="add()">立即提交</button>
+        <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+new Vue({
+  el:"#app",
+  data:{
+    role_name:'',
+  },
+  methods:{
+    add:function(){
+      this.$http.post('/admin/role/add',{
+        role_name:this.role_name,
+      },{
+        emulateJSON: true
+      }).then(function(res){
+        var obj = res.data;
+        console.log(obj);
+        if(obj.code==201){
+          layui.use('layer',function(){
+            var layer = layui.layer;
+            layer.msg(obj.msg,{icon:1,time:1000,shade:0.1},function(index){
+                var index=parent.layer.getFrameIndex(window.name);//获取当前弹出层的层级
+                window.parent.location.reload();//刷新父页面
+                parent.layer.close(index);//关闭弹出层
+            });
+          });
+        }else{
+          layui.use('layer', function(){
+            var layer = layui.layer;
+            layer.msg(obj.msg,{icon:0,time:1000,shade:0.1},function(index){
+                 var index=parent.layer.getFrameIndex(window.name);
+                 parent.layer.close(index);
+            });
+          }); 
+        }
+      });
+    },
+  }
+});
+</script>
+</html>

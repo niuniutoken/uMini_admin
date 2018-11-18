@@ -1,0 +1,135 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-form-center" id="app" v-cloak>
+	<div class="layui-form" action="">
+    <el-form label-width="80px" style="margin-bottom: 140px;" :model="formData" ref="formData" :rules="rules">
+      <el-form-item label="头像">
+        <el-upload
+          class="avatar-uploader"
+          action="/admin/upload/upload"
+          :show-file-list="false"
+          :on-success="handleAvatarSuccess"
+          :before-upload="beforeAvatarUpload">
+          <img v-if="formData.avatar" :src="formData.avatar" class="avatar">
+          <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+        </el-upload>
+      </el-form-item>
+      <el-form-item label="用户名" prop="username">
+        <el-input v-model="formData.username"></el-input>
+      </el-form-item>
+       <el-form-item label="密码" prop="password">
+        <el-input v-model="formData.password"></el-input>
+      </el-form-item>
+      
+      <el-form-item label="管理角色">
+        <el-select v-model="formData.role_id" placeholder="请选择管理员角色">
+          <div v-for="item in role">
+             <el-option :label="item.role_name" :value="item.id"></el-option>
+         </div>
+        </el-select>
+      </el-form-item>
+       <el-form-item>
+        <el-button type="primary" @click="add('formData')">确定</el-button>
+        <el-button>取消</el-button>
+      </el-form-item>
+    </el-form>
+  </div>
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+new Vue({
+  el:"#app",
+  data:{
+    formData:{
+      username:'',
+      password:'',
+      avatar:'',
+      role_id:'',
+    },
+    role:'',
+    rules: {
+      username: [
+        { required: true, message: '用户名不能为空', trigger: 'blur' }
+      ],
+      password: [
+        { required: true, message: '密码不能为空', trigger: 'blur' }
+      ],
+    }
+  },
+  created: function(){
+    this.get();
+  },
+  methods:{
+    get:function(){
+      this.$http.post('/admin/role/lst',{
+      },{
+         emulateJSON: true
+      }).then(function(res){
+        var obj = res.data
+        if(obj.code==200){
+          this.role = obj.data;
+        }else{
+          layui.use('layer', function(){
+            var layer = layui.layer;
+            layer.msg(obj.msg);
+          }); 
+        }
+      });
+    },
+    add:function(formName){
+      this.$refs[formName].validate((valid) => {
+        if (valid) {
+          this.$http.post('/admin/admin/add',{
+            username:this.formData.username,
+            password:this.formData.password,
+            avatar:this.formData.avatar,
+            role_id:this.formData.role_id
+          },{
+            emulateJSON: true
+          }).then(function(res){
+            var obj = res.data;
+            if(obj.code==201){
+              layer.confirm('添加成功，继续添加？', {
+                btn: ['继续','下次再说'] //按钮
+              }, function(){
+                window.location.reload();
+              }, function(){
+                var index=parent.layer.getFrameIndex(window.name);//获取当前弹出层的层级
+                window.parent.location.reload();//刷新父页面
+                parent.layer.close(index);//关闭弹出层
+              });
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:0,time:1000,shade:0.1},function(index){
+                     var index=parent.layer.getFrameIndex(window.name);
+                     parent.layer.close(index);
+                });
+              }); 
+            }
+          });
+        }else{
+          return false;
+        }
+      });
+    },
+    handleAvatarSuccess(res, file) {
+       this.formData.avatar = res.data[0];
+    },
+    beforeAvatarUpload(file) {
+      const isJPG = file.type === 'image/jpeg';
+      const isLt2M = file.size / 1024 / 1024 < 2;
+
+      // if (!isJPG) {
+      //   this.$message.error('上传头像图片只能是 JPG 格式!');
+      // }
+      // if (!isLt2M) {
+      //   this.$message.error('上传头像图片大小不能超过 2MB!');
+      // }
+      // return isJPG && isLt2M;
+    }
+  }
+});
+</script>
+</html>

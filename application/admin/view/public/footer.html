@@ -1,0 +1,17 @@
+<script src="/public/static/vue2/dist/vue2.js"></script>
+<script src="/public/static/vue-resource/dist/vue-resource.js"></script>
+<script src="/public/static/js/pageination.js"></script>
+<script src="/public/static/element-ui-2.4.6/index.js"></script>
+<script>
+   // 验证时间日期
+    Vue.filter('date',function(input){
+        var d = new Date(input*1000);
+        var year = d.getFullYear();
+        var month = d.getMonth() + 1;
+        var day = d.getDate() <10 ? '0' + d.getDate() : '' + d.getDate();
+        var hour = d.getHours();
+        var minutes = d.getMinutes();
+        var seconds = d.getSeconds();
+        return  year+ '-' + month + '-' + day + ' ' + hour + ':' + minutes;
+    })
+</script>

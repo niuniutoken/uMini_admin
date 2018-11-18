@@ -1,0 +1,180 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-fluid" id="app">
+    <div class="layui-form layui-card-header layuiadmin-card-header-auto">
+      <div class="layui-form-item">
+        <label class="layui-form-label">用户名</label>
+        <div class="layui-inline">
+          <input type="text" v-model="searchText" class="layui-input">
+        </div>
+        <div class="layui-inline">
+        <button class="layui-btn" @click="search()">
+          <i class="layui-icon layui-icon-search"></i>
+        </button>
+        <button class="layui-btn" @click="add()">
+          <i class="layui-icon layui-icon-add-1"></i>添加
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="layui-btn-container">
+  <div class="layui-form">
+    <template>
+      <el-table ref="multipleTable" :data="msgData" tooltip-effect="dark" style="width: 100%">
+        <el-table-column  label="封面图" width="100">
+          <template scope="scope">
+           <img :src="scope.row.avatar == null ||  scope.row.avatar == '' ? '/public/static/img/no_avatar.png' : scope.row.avatar" style="width:40px;height:40px;border-radius:60px;">
+          </template>
+        </el-table-column>
+        <el-table-column prop="username" label="用户名" width="100"></el-table-column>
+        <el-table-column prop="role_name" label="角色" width="200"></el-table-column>
+        <el-table-column prop="login_number" label="登录次数" wdth="100"></el-table-column>
+        <el-table-column prop="last_login_ip" label="最后登录ip" width="200"></el-table-column>
+        <el-table-column label="最后登录时间" width="200">
+          <template slot-scope="scope">{{scope.row.last_login_time | date}}</template>
+        </el-table-column>
+
+        <el-table-column label="状态" width="100">
+            <template  slot-scope="scope">
+              <div v-if="scope.row.status==1">
+                <el-button type="success" size="mini" @click="editStatus(scope.row.id,scope.row.status,scope.$index)">开启</el-button>
+              </div>
+              <div v-else>
+                <el-button type="danger" size="mini" @click="editStatus(scope.row.id,scope.row.status,scope.$index)">禁用</el-button>
+              </div>
+            </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200">
+          <template slot-scope="scope">
+            <el-row>
+              <el-button type="primary" size="mini" @click="editpwd(scope.row.id)">编辑</el-button>
+               <el-button v-if="scope.row.id !=1" type="danger" size="mini"  @click="dataDel(scope.row.id)">删除</el-button>
+            </el-row>
+          </template>
+        </el-table-column>
+      </el-table>
+    </template>
+  </div>
+</div>
+<el-pagination background layout="prev, pager, next" :total="this.page.total" @current-change="currentPage">
+</el-pagination>
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+  new Vue({ 
+    el:"#app",
+    data:{
+      msgData:'',
+      searchText:'',
+      page:{
+        total:0,//总页数
+        size:10,//每页显示条目个数不传默认10
+        page:1,//当前页码
+      },
+    },
+    created:function(){
+      this.list();
+    },
+    methods:{
+      //页码切换执行方法
+      currentPage:function(val){
+        this.page.page = val;
+        this.list();
+      },
+      search:function(){
+        this.page = 1;
+        this.list();
+      },
+      list:function(){
+        this.$http.post('/admin/admin/lst',{
+            page:this.page.page,
+            rows:this.page.size,
+            seacchText:this.searchText
+          },{
+             emulateJSON: true
+          }).then(function(res){
+            var obj = res.data
+            if(obj.code==200){
+              this.msgData = obj.data.info;
+              this.page.total = Math.ceil(obj.data.count/this.page.size)*10;
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:0,time:1500,shade:0.1});
+              }); 
+            }
+          });
+        },
+        add:function(){
+          layer.open({
+            type: 2,
+            area: ['700px', '450px'],
+            fixed: false, //不固定
+            maxmin: true,
+            title:"添加用户信息",
+            content: "/admin/index/view?c=admin&a=add"
+          });
+        },
+        editStatus:function(id,status,index){
+          if(status==1){
+            var edit_status = 0;
+          }else{
+            var edit_status = 1;
+          }
+          this.$http.post('/admin/admin/editStatus',{
+            id:id,
+            status:edit_status,
+            },{
+            emulateJSON: true
+            }).then(function(res){
+              var obj = res.data
+              if(obj.code==201){
+                this.msgData[index]['status'] =edit_status; 
+              }else{
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:0,time:1000,shade:0.1},function(index){
+                     var index=parent.layer.getFrameIndex(window.name);
+                     parent.layer.close(index);
+                  });
+                });
+              }
+            });
+          },
+        dataDel:function(id){
+         layer.confirm('你确定要删除吗？', {icon: 3}, function (index) {
+            Vue.http.post('/admin/admin/del',{id:id},{emulateJSON: true}).then(function(res){
+              var obj = res.data
+            if(obj.code==204){
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:1,time:1500,shade:0.1},function(index){
+                    window.location.reload();
+                  });
+                }); 
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:0,time:1500,shade:0.1});
+              }); 
+            }
+          });
+
+        });
+        },
+        editpwd:function(id){
+          layer.open({
+            type:2,
+            area:['700px','450px'], 
+            fixed:false,
+            maxmin:true,
+            title:'编辑用户信息',
+            content:'/admin/index/view?c=admin&a=pwd&id='+id
+          });
+        }
+      }
+    });
+</script>
+
+</html>

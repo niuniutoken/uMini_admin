@@ -1,0 +1,189 @@
+{include file="public/header" /}
+
+<body>
+  <div id="app" class="form-bottom">
+
+  <el-form :label-position="labelPosition" label-width="100px" class="demo-form-inline" style="margin-left: 54px;">
+
+    <el-form :inline="true" class="demo-form-inline">
+      <el-form-item label="接口名称">
+      <el-input v-model="route_name"></el-input>
+      </el-form-item>
+    </el-form>
+
+    <el-form :inline="true" class="demo-form-inline">
+      <el-form-item label="路由名称">
+      <el-input v-model="route_action"></el-input>
+      </el-form-item>
+    </el-form>
+
+    <el-form>
+      <el-form-item label="选择分组">
+        <el-select v-model="group_id" placeholder="不分组">
+          <div v-for="item in group">
+            <el-option :label="item.name" :value="item.id"></el-option>
+          </div>
+        </el-select>
+      </el-form-item>
+    </el-form>
+
+<!--      <el-form :inline="true" class="demo-form-inline">
+      <el-form-item label="method">
+        <el-select v-model="route_method" placeholder="选择请求方式">
+          <el-option label="POST" value="POST"></el-option>
+          <el-option label="GET" value="GET"></el-option>
+          <el-option label="PUT" value="PUT"></el-option>
+          <el-option label="HEAD" value="HEAD"></el-option>
+          <el-option label="DELETE" value="DELETE"></el-option>
+          <el-option label="PATCH" value="PATCH"></el-option>
+          <el-option label="OPTIONS" value="OPTIONS"></el-option>
+        </el-select>
+      </el-form-item>
+    </el-form> -->
+
+     <el-form :inline="true" class="demo-form-inline">
+      <el-form-item>
+      <el-button type="success" icon="el-icon-plus" @click="addparam" size="mini"></el-button>
+      </el-form-item>
+    </el-form>
+ 
+  <el-form :inline="true" :model="dynamicValidateForm" class="demo-form-inline"  v-for="(param, index) in dynamicValidateForm.params"  size="mini">
+      <el-form-item :label="'参数' + index">
+        <el-input placeholder="参数名(key)" v-model="param.name"></el-input>
+      </el-form-item>
+     
+      <el-select v-model="param.type" placeholder="参数类型"  size="mini">
+        <el-option label="int" value="int"></el-option>
+        <el-option label="long" value="long"></el-option>
+        <el-option label="float" value="float"></el-option>
+        <el-option label="string" value="string"></el-option>
+        <el-option label="boolen" value="boolen"></el-option>
+        <el-option label="file" value="file"></el-option>
+        <el-option label="array" value="array"></el-option>
+        <el-option label="json" value="json"></el-option>
+        <el-option label="xml" value="xml"></el-option>
+      </el-select>
+
+       <el-select v-model="param.require" placeholder="是否必须"  size="mini">
+        <el-option label="是" value="1"></el-option>
+        <el-option label="否" value="2"></el-option>
+      </el-select>
+
+      <el-form-item>
+        <el-input v-model="param.comment" placeholder="参数解释"></el-input>
+      </el-form-item>
+
+      <el-form-item>
+        <el-button @click.prevent="removeparam(param)" type="danger" icon="el-icon-close"></el-button>
+      </el-form-item>
+  </el-form>
+
+  <el-form :inline="true" class="demo-form-inline">
+        <el-form-item label="返回参数">
+        <el-input type="textarea" :rows="8" :cols="80" placeholder="请输入内容" v-model="return_param"></el-input>
+        </el-form-item>
+      </el-form>
+
+       <el-form :inline="true" class="demo-form-inline">
+        <el-form-item label="备注信息">
+        <el-input type="textarea" :rows="8" :cols="80" v-model="remark"></el-input>
+        </el-form-item>
+      </el-form>
+
+    <el-form-item>
+      <el-button type="primary" @click="add()">提交</el-button>
+      <el-button @click="resetForm('dynamicValidateForm')">重置</el-button>
+    </el-form-item>
+  </el-form>
+
+
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+new Vue({
+  el:"#app",
+  data:{
+    isshow:false,
+    labelPosition: 'right',
+    route_name:'',
+    route_action:'',
+    group_id:'',
+    return_param:'',
+    remark:'',
+    group:'',
+    dynamicValidateForm: {
+      params: [{
+        name: '',
+        type:'',
+        require:'',
+        comment:'',
+      }],
+    },
+  },
+  mounted:function(){
+    this.groups();
+  },
+  methods:{
+      resetForm(formName) {
+        this.$refs[formName].resetFields();
+      },
+      removeparam(item) {
+        var index = this.dynamicValidateForm.params.indexOf(item)
+        if (index !== -1) {
+          this.dynamicValidateForm.params.splice(index, 1)
+        }
+      },
+      addparam() {
+        this.dynamicValidateForm.params.push({
+          name: '',
+          type:'',
+          require:'',
+          comment:'',
+        });
+      },
+      add:function(formName){
+        console.log(this.dynamicValidateForm.params);
+        this.$http.post('/admin/api_route/add',{
+        route_name:this.route_name,
+        route_action:this.route_action,
+        group_id:this.group_id,
+        return_param:this.return_param,
+        remark:this.remark,
+        param:this.dynamicValidateForm.params,
+        },{
+          emulateJSON: true
+        }).then(function(res){
+          var obj = res.data;
+          if(obj.code==201){
+            window.location.href="/admin/index/view?c=apiroute&a=index";
+          }else{
+            layui.use('layer', function(){
+              var layer = layui.layer;
+              layer.msg(obj.msg,{icon:0,time:1000,shade:0.1},function(index){
+                   var index=parent.layer.getFrameIndex(window.name);
+                   parent.layer.close(index);
+              });
+            }); 
+          }
+        })
+      },
+      groups:function(){
+        this.$http.post('/admin/group/lst',{
+             emulateJSON: true
+          }).then(function(res){
+            var obj = res.data
+            if(obj.code==200){
+              this.group = obj.data.info;
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg);
+              }); 
+            }
+          });
+      }
+  }
+});
+</script>
+</html>

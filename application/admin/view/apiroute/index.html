@@ -1,0 +1,134 @@
+{include file="public/header" /}
+<style>
+.action_name{
+  width:200px;
+  display: inline-block;
+  padding-left:20px;
+}
+.action_name_comment{
+  width:400px;
+  display: inline-block
+}
+.action_name_comment_button{
+  display:inline-block;
+  float:right
+}
+.action-name-spacing{
+  margin-top:10px;
+}
+</style>
+<body>
+  <div class="layui-fluid" id="app">
+    <div class="layui-form layui-card-header layuiadmin-card-header-auto">
+      <div class="layui-form-item">
+        <label class="layui-form-label">用户名</label>
+        <div class="layui-inline">
+          <input type="text" v-model="searchText" class="layui-input">
+        </div>
+        <div class="layui-inline">
+          <button class="layui-btn" @click="search()">
+            <i class="layui-icon layui-icon-search"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  <div class="layui-btn-container">
+	<button class="layui-btn" @click="add()"><i class="layui-icon layui-icon-add-1"></i>添加</button>
+  
+  <div class="layui-form">
+
+    <el-collapse v-model="activeNames">
+      <div v-for="item in msgData">
+        <el-collapse-item :title="item.group_name" :name="item.id">
+          <div v-for=" child in item.group_child">
+            <el-row>
+             <!--  <el-button type="success" size="mini">{{child.route_method}}</el-button>  -->
+              <div class="action_name">{{child.route_action}}</div>
+              <div class="action_name_comment">{{child.route_name}}</div>
+              <div class="action_name_comment_button">
+                <el-button type="info" size="mini" icon="el-icon-view" @click="details(child.id)">详情</el-button>
+                <el-button type="primary" size="mini" icon="el-icon-edit" @click="edit(child.id)">编辑</el-button>
+                <el-button @click="dataDel(child.id)" type="danger" size="mini" icon="el-icon-delete">删除</el-button>
+              </div>
+            </el-row>
+            <div class="action-name-spacing"></div>
+          </div>
+        </el-collapse-item>
+      </div>
+    </el-collapse>
+    </div>
+  </div>
+  </div>
+</body>
+{include file="public/footer" /}
+<script>
+  new Vue({ 
+    el:"#app",
+    data:{
+      msgData:'',
+      searchText:'',
+      activeNames: [],
+    },
+    created:function(){
+      this.list()
+    },
+    methods:{
+      list:function(){
+        this.$http.post('/admin/api_route/lst',{
+            seacchText:this.searchText
+          },{
+             emulateJSON: true
+          }).then(function(res){
+            var obj = res.data
+            if(obj.code==200){
+              this.activeNames = obj.data.ids;
+              this.msgData = obj.data.list;
+              console.log(this.msgData);
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg);
+              }); 
+            }
+          });
+        },
+        search:function(){
+          this.page = 1;
+          return this.list();
+        },
+        add:function(){
+          window.location.href="/admin/index/view?c=apiroute&a=add";
+        },
+        edit:function(id){
+           window.location.href='/admin/index/view/?c=apiroute&a=edit&id='+id
+        },
+        details:function(id){
+           window.location.href='/admin/index/view/?c=apiroute&a=details&id='+id
+        },
+        dataDel:function(id){
+         layer.confirm('你确定要删除吗？', {icon: 3}, function (index) {
+            Vue.http.post('/admin/api_route/del',{id:id},{emulateJSON: true}).then(function(res){
+              console.log(res)
+              var obj = res.data
+            if(obj.code==204){
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:1,time:1500,shade:0.1},function(index){
+                    window.location.reload();
+                  });
+                }); 
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:0,time:1500,shade:0.1});
+              }); 
+            }
+          });
+        });
+        }
+      }
+    });
+</script>
+
+</html>

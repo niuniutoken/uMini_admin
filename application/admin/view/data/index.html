@@ -1,0 +1,201 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-fluid" id="app">
+    <div class="layui-btn-container">
+	    <el-row>
+          <el-button type="primary" plain @click="backups()" id="export">立即备份</el-button>
+          <el-button type="success" plain @click="optimize()">优化表</el-button>
+          <el-button type="warning" plain @click="repair()">修复表</el-button>
+      </el-row>
+      <div class="layui-form">
+	      <template>
+          <el-table ref="multipleTable" :data="msgData" tooltip-effect="dark" style="width: 100%" @selection-change="handleSelectionChange">
+            <el-table-column type="selection" width="55"></el-table-column>
+            <el-table-column prop="name" label="表名" width="200"></el-table-column>
+            <el-table-column prop="rows" label="数据量" width="100"></el-table-column>
+            <el-table-column prop="data_length" label="数据大小" width="100"></el-table-column>
+            <el-table-column label="创建时间" width="200">
+              <template slot-scope="scope">{{ scope.row.create_time}}</template>
+            </el-table-column>
+            <el-table-column label="备份状态" width="150">
+              <template slot-scope="scope">{{ scope.row.data_status}}</template>
+            </el-table-column>
+            <el-table-column label="操作" show-overflow-tooltip>
+              <template slot-scope="scope">
+                <el-row>
+                  <el-button type="success" size="mini" plain @click="optimize(scope.row.name)">优化表</el-button>
+                  <el-button type="warning" size="mini" plain @click="repair(scope.row.name)">修复表</el-button>
+                </el-row>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
+      </div>
+    </div>
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+  new Vue({ 
+    el:"#app",
+    data:{
+      msgData:[],
+      multipleSelection: [],
+      id:[],
+      ids:[],
+      tableId:[],
+    },
+     created: function(){
+      this.list();
+    },
+    methods:{
+      handleSelectionChange(val) {
+        this.ids = [];
+        this.id = [];
+        this.tableId = [];
+        this.multipleSelection = val.sort(this.compare("id"));
+        console.log(this.multipleSelection);
+        for (var i=0;i<this.multipleSelection.length;i++){ 
+          this.ids.push(this.multipleSelection[i]['name']);
+          this.tableId.push(this.multipleSelection[i]['id']);
+          this.id.push(i);
+        }
+      },
+      //页码切换执行方法
+      pageFn(val){
+        this.model.page=val;
+        this.list();
+      },
+      list:function(){
+        this.$http.post('/admin/data/lst',{
+             emulateJSON: true
+          }).then(function(res){
+            var obj = res.data
+            if(obj.code==200){
+              this.msgData = obj.data;
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg);
+              }); 
+            }
+          });
+        },
+        backups:function(){
+          this.$http.post('/admin/data/export',{
+              ids:this.ids,
+            },{
+               emulateJSON: true
+            }).then(function(res){
+              var obj = res.data;
+              if(obj.code==200){
+                var obj = res.data
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:1,time:1000,shade:0.1});
+                }); 
+
+                for (var i=0;i<this.id.length;i++){ 
+                  
+                  this.$http.get('/admin/data/export?id='+i+'&start=0').then(function(res){
+                    var obj = res.data;
+                    if(obj.code==200){
+                      var table_ids = obj.data.id-1;
+                      var table_id = this.tableId[table_ids];
+                      this.msgData[table_id]['data_status'] = obj.msg;
+                      delete table_id;
+                      // this.multipleSelection[i]['data_statuso'] = '备份完成';
+                    }else{
+                      return layui.use('layer', function(){
+                        var layer = layui.layer;
+                        layer.msg(obj.msg,{icon:0,time:2000,shade:0.1});
+                      }); 
+                    }
+                  });
+                }
+              }else{
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:0,time:2000,shade:0.1});
+                }); 
+              }
+          });
+        },
+        optimize:function(name=''){
+          if(name){
+            this.ids = name;
+          }else{
+            for (var i=0;i<this.multipleSelection.length;i++){ 
+              this.ids.push(this.multipleSelection[i]['name']);
+            }
+          }
+          this.$http.post('/admin/data/optimize',{
+              ids:this.ids,
+            },{
+               emulateJSON: true
+            }).then(function(res){
+              var obj = JSON.parse(res.data);
+              if(obj.code==200){
+                var obj = JSON.parse(res.data)
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:1,time:1000,shade:0.1});
+                }); 
+              }else{
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:0,time:2000,shade:0.1});
+                }); 
+              }
+          });
+        },
+        repair:function(name=''){
+          if(name){
+            this.ids = name;
+          }else{
+            for (var i=0;i<this.multipleSelection.length;i++){ 
+              this.ids.push(this.multipleSelection[i]['name']);
+            }
+          }
+          this.$http.post('/admin/data/repair',{
+              ids:this.ids,
+            },{
+               emulateJSON: true
+            }).then(function(res){
+              var obj = JSON.parse(res.data);
+              if(obj.code==200){
+                var obj = JSON.parse(res.data)
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:1,time:1000,shade:0.1});
+                }); 
+              }else{
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:0,time:2000,shade:0.1});
+                }); 
+              }
+          });
+        },
+        compare:function (prop) {
+          return function (obj1, obj2) {
+              var val1 = obj1[prop];
+              var val2 = obj2[prop];
+              if (!isNaN(Number(val1)) && !isNaN(Number(val2))) {
+                  val1 = Number(val1);
+                  val2 = Number(val2);
+              }
+              if (val1 < val2) {
+                  return -1;
+              } else if (val1 > val2) {
+                  return 1;
+              } else {
+                  return 0;
+              }            
+          } 
+        },
+      }
+    });
+</script>
+
+</html>

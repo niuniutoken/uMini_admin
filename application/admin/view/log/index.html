@@ -1,0 +1,127 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-fluid" id="app">
+    
+    <div class="layui-btn-container">
+        <template>
+          <el-input placeholder="输入需要查询的标题" v-model="searchText" class="input-search-size"></el-input>
+          <el-button type="primary" icon="el-icon-search" @click="search()">搜索</el-button>
+          <el-button type="danger" @click="del()">删除</el-button>
+        </template>
+      <div class="layui-form">
+	      <template>
+          <el-table ref="multipleTable" :data="msgData" tooltip-effect="dark" style="width: 100%" @selection-change="handleSelectionChange">
+            <el-table-column type="selection" width="55"></el-table-column>
+            <el-table-column prop="admin_name" label="操作用户" width="150"></el-table-column>
+            <el-table-column prop="description" label="描述" width="250"></el-table-column>
+            <el-table-column prop="ip" label="操作ip" width="150"></el-table-column>
+            <el-table-column prop="status" label="状态" width="100">
+              <template slot-scope="scope">{{scope.row.status==1?'成功':'失败'}}</template>
+            </el-table-column>
+            <el-table-column label="创建时间" width="200">
+              <template slot-scope="scope">{{scope.row.create_time | date}}</template>
+            </el-table-column>
+            </el-table-column>
+            <el-table-column label="操作" show-overflow-tooltip>
+              <template slot-scope="scope">
+                <el-row>
+                  <el-button type="danger" size="mini"  @click="del(scope.row.id)">删除</el-button>
+                </el-row>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
+      </div>
+    </div>
+  <el-pagination background layout="prev, pager, next" :total="this.page.total" @current-change="currentPage">
+  </el-pagination>
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+  new Vue({ 
+    el:"#app",
+    data:{
+      msgData:[],
+      multipleSelection: [],
+      id:[],
+      ids:[],
+      page:{
+        total:0,//总页数
+        size:10,//每页显示条目个数不传默认10
+        page:1,//当前页码
+      },
+      searchText:'',
+
+    },
+    created: function(){
+        this.list();
+    },
+    methods:{
+      currentPage:function(val){
+        this.page.page = val;
+        this.list();
+      },
+      handleSelectionChange(val) {
+        this.multipleSelection = val; 
+      },
+      search:function(){
+        this.page = 1;
+        this.list();
+      },
+      list:function(){
+        this.$http.post('/admin/log/lst',{
+          page:this.page.page,
+          rows:this.page.size,
+          searchText:this.searchText,
+        },{
+             emulateJSON: true
+        }).then(function(res){
+          var obj = res.data
+          if(obj.code==200){
+            this.msgData = obj.data.info;
+            this.page.total = Math.ceil(obj.data.count/this.page.size)*10;
+          }else{
+            layui.use('layer', function(){
+              var layer = layui.layer;
+              layer.msg(obj.msg);
+            }); 
+          }
+        });
+      },
+      del:function(ids=''){
+        if(ids){
+          this.ids = ids;
+        }else{
+          for (var i=0;i<this.multipleSelection.length;i++){ 
+            this.ids.push(this.multipleSelection[i]['id']);
+          }
+        }
+        this.$http.post('/admin/log/del',{
+            ids:this.ids,
+          },{
+             emulateJSON: true
+          }).then(function(res){
+            var obj = res.data;
+            if(obj.code==204){
+              var obj = res.data
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:1,time:1000,shade:0.1},function(){
+                  window.location.reload();
+                });
+              }); 
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:0,time:2000,shade:0.1});
+              }); 
+            }
+        });
+      }
+
+    }
+    });
+</script>
+
+</html>

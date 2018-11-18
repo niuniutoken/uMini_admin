@@ -1,0 +1,128 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-form-center" id="app">
+  <el-form :model="formData" ref="formData" label-width="80px" :rules="rules" style="margin-bottom: 140px;margin-top:10px;">
+      <el-form-item label="用户名" prop="username">
+        <el-input v-model="formData.username"></el-input>
+      </el-form-item>
+      <el-form-item label="头像">
+        <el-upload
+          class="avatar-uploader"
+          action="/admin/upload/upload"
+          :show-file-list="false"
+          :on-success="handleAvatarSuccess"
+          :before-upload="beforeAvatarUpload">
+          <img v-if="formData.avatar" :src="formData.avatar" class="avatar">
+          <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+        </el-upload>
+      </el-form-item>
+       <el-form-item label="登录密码" prop="password">
+        <el-input v-model="formData.password"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="onSubmit('formData')">确定</el-button>
+        <el-button>取消</el-button>
+      </el-form-item>
+    </el-form>
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+new Vue({
+  el:"#app",
+  data:{
+    formData:{
+      id:'',
+      username:'',
+      password:'',
+      uid:'',
+      avatar:'',
+    },
+    rules: {
+      username: [
+        { required: true, message: '用户名不能为空', trigger: 'blur' }
+      ],
+      password: [
+        { required: true, message: '密码不能为空', trigger: 'blur' }
+      ],
+    }
+  },
+  mounted:function(){
+    this.getUrlParam('id');
+    this.get();
+  },
+  methods:{
+    get:function(){
+      this.$http.get('/admin/admin/info?id='+this.formData.id
+      ).then(function(res){
+        var obj = res.data
+        if(obj.code==200){
+          this.formData.id = obj.data.id;
+          this.formData.username = obj.data.username;
+          this.formData.avatar = obj.data.avatar;
+        }else{
+          layui.use('layer',function(){
+            var layer = layui.layer;
+            layer.msg(obj.msg);
+          });
+        }
+      });
+    },
+    onSubmit:function(formName){
+      this.$refs[formName].validate((valid) => {
+        if (valid) {
+          this.$http.post('/admin/admin/editpwd',{
+          id:this.formData.id,
+          password:this.formData.password,
+          username:this.formData.username,
+          avatar:this.formData.avatar
+          },{
+          emulateJSON: true
+          }).then(function(res){
+            var obj = res.data
+            if(obj.code==201){
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:1,time:1000,shade:0.1},function(index){
+                  var index=parent.layer.getFrameIndex(window.name);
+                  window.parent.location.reload();
+                  parent.layer.close(index);
+                });
+              }); 
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg,{icon:0,time:1000,shade:0.1},function(index){
+                   var index=parent.layer.getFrameIndex(window.name);
+                   parent.layer.close(index);
+                });
+              });
+            }
+          });
+        }else{
+          return false;
+        }
+      });
+    },
+    getUrlParam:function(name){
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if(r !=null){
+            this.formData.id = unescape(r[2]);
+            console.log(this.formData.id);
+        }else{
+          return null;
+        }
+    },
+    handleAvatarSuccess(res, file) {
+       this.formData.avatar = res.data[0];
+    },
+    beforeAvatarUpload(file) {
+      const isJPG = file.type === 'image/jpeg';
+      const isLt2M = file.size / 1024 / 1024 < 2;
+    },
+  }
+});
+</script>
+
+</html>

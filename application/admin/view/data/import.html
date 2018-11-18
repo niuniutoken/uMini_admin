@@ -1,0 +1,175 @@
+{include file="public/header" /}
+<body>
+  <div class="layui-fluid" id="app">
+    <div class="layui-btn-container">
+      <div class="layui-form">
+	      <template>
+          <el-table ref="multipleTable" :data="msgData" tooltip-effect="dark" style="width: 100%" @selection-change="handleSelectionChange">
+            <el-table-column prop="name" label="备份名称" width="200"></el-table-column>
+            <el-table-column prop="part" label="卷数" width="100"></el-table-column>
+            <el-table-column prop="compress" label="压缩" width="100"></el-table-column>
+            <el-table-column prop="size" label="数据大小" width="100"></el-table-column>
+            <el-table-column label="备份时间" width="200">
+              <template slot-scope="scope">{{ scope.row.time}}</template>
+            </el-table-column>
+            <el-table-column label="状态" width="100">
+              <template slot-scope="scope">-</template>
+            </el-table-column>
+            <el-table-column label="操作" show-overflow-tooltip>
+              <template slot-scope="scope">
+                <el-row>
+                  <el-button type="success" size="mini" plain @click="revert(scope.row.time)">还原</el-button>
+                  <el-button type="warning" size="mini" plain @click="del(scope.row.time)">删除</el-button>
+                </el-row>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
+      </div>
+    </div>
+</div>
+</body>
+{include file="public/footer" /}
+<script>
+  new Vue({ 
+    el:"#app",
+    data:{
+      msgData:[],
+      multipleSelection: [],
+      id:[],
+      ids:[],
+    },
+     created: function(){
+      this.list();
+    },
+    methods:{
+      handleSelectionChange(val) {
+        this.multipleSelection = val; 
+      },
+      //页码切换执行方法
+      pageFn(val){
+        this.model.page=val;
+        this.list();
+      },
+      list:function(){
+        this.$http.post('/admin/data/import',{
+             emulateJSON: true
+          }).then(function(res){
+            var obj = res.data
+            if(obj.code==200){
+              this.msgData = obj.data;
+            }else{
+              layui.use('layer', function(){
+                var layer = layui.layer;
+                layer.msg(obj.msg);
+              }); 
+            }
+          });
+        },
+        backups:function(){
+          for (var i=0;i<this.multipleSelection.length;i++){ 
+            this.ids.push(this.multipleSelection[i]['name']);
+            this.id.push(i);
+          }
+          this.$http.post('/admin/data/export',{
+              ids:this.ids,
+            },{
+               emulateJSON: true
+            }).then(function(res){
+              var obj = res.data;
+              if(obj.code==200){
+                var obj = res.data
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:1,time:1000,shade:0.1});
+                }); 
+
+                for (var i=0;i<this.id.length;i++){ 
+                  
+                  this.$http.get('/admin/data/export?id='+i+'&start=0').then(function(res){
+                    var obj = res.data;
+                    if(obj.code==200){
+                      var table_id = obj.data.id;
+                      this.msgData[table_id]['data_status'] = obj.msg;
+                      delete table_id;
+                      // this.multipleSelection[i]['data_statuso'] = '备份完成';
+                    }else{
+                      return layui.use('layer', function(){
+                        var layer = layui.layer;
+                        layer.msg(obj.msg,{icon:0,time:2000,shade:0.1});
+                      }); 
+                    }
+                  });
+                }
+              }else{
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:0,time:2000,shade:0.1});
+                }); 
+              }
+          });
+        },
+        del:function(time=''){
+          this.$http.post('/admin/data/del',{
+              time:time,
+            },{
+               emulateJSON: true
+            }).then(function(res){
+              var obj = res.data;
+              if(obj.code==200){
+                var obj = res.data
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:1,time:1000,shade:0.1},function(index){
+                    window.location.reload();
+                  });
+                }); 
+              }else{
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:0,time:2000,shade:0.1});
+                }); 
+              }
+          });
+        },
+        revert:function(time=''){
+          this.$http.post('/admin/data/revert',{
+              time:time,
+              },{
+                 emulateJSON: true
+              }).then(function(res){
+                var obj = res.data;
+                if(obj.code==200){
+                  this.$http.post('/admin/data/revert',{
+                    part:obj.data.part,
+                    start:obj.data.start,
+                  },{
+                     emulateJSON: true
+                  }).then(function(res){
+                    var obj = res.data;
+                    if(obj.code==200){
+                      var obj = res.data
+                      layui.use('layer', function(){
+                        var layer = layui.layer;
+                        layer.msg(obj.msg,{icon:1,time:1000,shade:0.1});
+                      }); 
+                    }else{
+                      layui.use('layer', function(){
+                        var layer = layui.layer;
+                        layer.msg(obj.msg,{icon:0,time:2000,shade:0.1});
+                      }); 
+                    }
+                });
+              }else{
+                layui.use('layer', function(){
+                  var layer = layui.layer;
+                  layer.msg(obj.msg,{icon:0,time:2000,shade:0.1});
+                }); 
+              }
+          });
+        },
+      }
+    });
+</script>
+
+</html>

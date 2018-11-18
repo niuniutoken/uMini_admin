@@ -1,0 +1,130 @@
+{include file="public/header" /}
+<body>
+  <div id="app" style="margin-left:30px">
+    <el-tabs>
+      <el-tab-pane label="站点管理">
+       <div class="layui-form-center">
+      <el-form label-width="100px" style="margin-bottom: 140px;">
+        <el-form-item label="网站标题">
+          <el-input v-model="website_title"></el-input>
+        </el-form-item>
+        <el-form-item label="网站描述">
+          <el-input v-model="website_describe"></el-input>
+        </el-form-item>
+        <el-form-item label="网站关键字">
+          <el-input v-model="website_keywords"></el-input>
+        </el-form-item>
+        <el-form-item label="网站备案号">
+          <el-input v-model="website_record"></el-input>
+        </el-form-item>
+        <el-form-item label="版权信息">
+          <el-input v-model="copyright_information"></el-input>
+        </el-form-item>
+        <el-form-item label="站点状态">
+          <el-switch v-model="website_status"></el-switch>
+          <el-alert style="height:30px;background-color:#fff;" title="站点关闭后除管理员外所有人访问不了后台" type="info" show-icon :closable="false"></el-alert>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="webSubmit">确定</el-button>
+          <el-button>取消</el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+      </el-tab-pane>
+      <el-tab-pane label="系统管理">
+        <div class="layui-form-center">
+          <el-form>
+            <el-form-item label="禁止后台访问ip">
+              <el-input type="textarea" v-model="website_limit_ip"></el-input>
+               <el-alert style="height:30px;background-color:#fff;" title="多个用#号分隔，如果不配置表示不限制IP访问" type="info" show-icon :closable="false"></el-alert>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="sysSubmit">确定</el-button>
+              <el-button>取消</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+  </div>
+</body>
+{include file="public/footer" /}
+<script type="text/javascript" src="/public/static/wangeditor3/wangEditor.min.js"></script>
+<script type="text/javascript">
+    
+</script>
+<script>
+new Vue({
+  el:"#app",
+  data:{
+    website_title:'',
+    website_describe:'',
+    website_keywords:'',
+    website_record:'',
+    copyright_information:'',
+    website_status:true,
+    website_limit_ip:'',
+    status:1,
+  },
+  created:function(){
+    this.list();
+  },
+  methods:{
+    list:function(){
+      this.$http.post('/admin/config/lst',{
+           emulateJSON: true
+      }).then(function(res){
+        var obj = res.data;
+        if(obj.code==200){
+          if(obj.data.website_status==0){
+            this.website_status = false;
+          }
+          this.website_title = obj.data.website_title,
+          this.website_describe = obj.data.website_describe,
+          this.website_keywords = obj.data.website_keywords,
+          this.website_record = obj.data.website_record,
+          this.copyright_information = obj.data.copyright_information,
+          this.website_limit_ip = obj.data.website_limit_ip
+        }
+      });
+    },
+    webSubmit:function(){
+      if(this.website_status){
+        this.status = 1;
+      }else{
+        this.status = 0;
+      }
+      this.$http.post('/admin/config/edit',{
+        website_title:this.website_title,
+        website_describe:this.website_describe,
+        website_keywords:this.website_keywords,
+        website_record:this.website_record,
+        copyright_information:this.copyright_information,
+        website_status:this.status
+      },{
+        emulateJSON: true
+      }).then(function(res){
+        var obj = res.data;
+        layui.use('layer', function(){
+          var layer = layui.layer;
+          layer.msg(obj.msg,{icon:1,time:1000,shade:0.1});
+        }); 
+      })
+    },
+    sysSubmit:function(){
+      this.$http.post('/admin/config/edit',{
+        website_limit_ip:this.website_limit_ip
+      },{
+        emulateJSON: true
+      }).then(function(res){
+        var obj = res.data;
+        layui.use('layer', function(){
+          var layer = layui.layer;
+          layer.msg(obj.msg,{icon:1,time:1000,shade:0.1});
+        }); 
+      })
+    },
+  }
+});
+</script>
+</html>
